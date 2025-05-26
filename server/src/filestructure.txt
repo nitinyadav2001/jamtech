@@ -1,0 +1,88 @@
+src/
+├── config/
+│   └── database.js
+├── controller/
+│   ├── rbac/
+│   │   ├── roleController.js
+│   │   ├── permissionController.js
+│   │   └── userController.js
+│   ├── leads/
+│   │   ├── leadController.js
+│   │   ├── dispositionController.js
+│   │   └── transferController.js
+│   ├── deals/
+│   │   ├── dealController.js
+│   │   └── commissionController.js
+│   ├── properties/
+│   │   ├── propertyController.js
+│   │   └── propertyTypeController.js
+│   ├── clients/
+│   │   └── clientController.js
+│   ├── distributions/
+│   │   ├── distributionTypeController.js
+│   │   ├── distributionRuleController.js
+│   │   └── assignmentQueueController.js
+│   ├── accounting/
+│   │   └── accountingEntryController.js
+│   └── tags/
+│       └── tagController.js
+├── services/
+│   ├── rbac/
+│   │   ├── roleService.js
+│   │   ├── permissionService.js
+│   │   └── userService.js
+│   ├── leads/
+│   │   ├── leadService.js
+│   │   ├── dispositionService.js
+│   │   └── transferService.js
+│   ├── deals/
+│   │   ├── dealService.js
+│   │   └── commissionService.js
+│   ├── properties/
+│   │   ├── propertyService.js
+│   │   └── propertyTypeService.js
+│   ├── clients/
+│   │   └── clientService.js
+│   ├── distributions/
+│   │   ├── distributionTypeService.js
+│   │   ├── distributionRuleService.js
+│   │   └── assignmentQueueService.js
+│   ├── accounting/
+│   │   └── accountingEntryService.js
+│   └── tags/
+│       └── tagService.js
+├── middleware/
+│   ├── authMiddleware.js
+│   ├── errorMiddleware.js
+│   └── permissionMiddleware.js
+├── routes/
+│   ├── rbac/
+│   │   ├── roleRoutes.js
+│   │   ├── permissionRoutes.js
+│   │   └── userRoutes.js
+│   ├── leads/
+│   │   ├── leadRoutes.js
+│   │   ├── dispositionRoutes.js
+│   │   └── transferRoutes.js
+│   ├── deals/
+│   │   ├── dealRoutes.js
+│   │   └── commissionRoutes.js
+│   ├── properties/
+│   │   ├── propertyRoutes.js
+│   │   └── propertyTypeRoutes.js
+│   ├── clients/
+│   │   └── clientRoutes.js
+│   ├── distributions/
+│   │   ├── distributionTypeRoutes.js
+│   │   ├── distributionRuleRoutes.js
+│   │   └── assignmentQueueRoutes.js
+│   ├── accounting/
+│   │   └── accountingEntryRoutes.js
+│   └── tags/
+│       └── tagRoutes.js
+├── utils/
+│   ├── logger.js
+│   ├── validators.js
+│   ├── errorHandler.js
+│   └── prismaClient.js
+└── index.js
