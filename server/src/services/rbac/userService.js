@@ -1,110 +1,44 @@
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
-import validator from "validator";
 import validateMandatoryFields from "../../utils/validateFields.js";
-import nodemailer from "nodemailer";
 import jwt from "jsonwebtoken";
 
-import {
-  applySorting,
-  applyPagination,
-  applyFiltering,
-  applySearch,
-} from "../../utils/queryHelper.js";
-
-// Mini helper functions
-const Trim = (data) => {
-  return data.trim();
-};
-
-const prisma = new PrismaClient();
-const SALT_ROUNDS = 10;
-
 const userService = {
-  // Create a new User with unique constraint checks and password hashing
   async createUser(data) {
     let {
-      username,
+      fullName,
       email,
       phone,
       password,
-      fullName,
       department,
       role,
       profileImage,
       dob,
     } = data;
 
-    // Trim all inputs at the beginning to avoid redundant trimming later
-    email = Trim(email) || null;
-    phone = Trim(phone);
-    password = Trim(password);
-    fullName = Trim(fullName) || null;
-
-    // Validate mandatory fields
-    validateMandatoryFields([
-      { key: "Email", value: email },
-      { key: "Phone", value: phone },
-      { key: "Password", value: password },
-      { key: "Department", value: department },
-      { key: "Role", value: role },
-    ]);
-
-    // Additional validation for email and phone format
-    if (!validator.isEmail(email)) {
-      throw new Error("Invalid email format");
-    }
-
-    if (!validator.isMobilePhone(phone, "any")) {
-      // Use 'any' for any region's phone format
-      throw new Error("Invalid phone number format");
-    }
-
     try {
-      // Check if username, email, or phone already exists
       const existingUser = await prisma.user.findFirst({
         where: {
-          OR: [
-            { email: email },
-            { phone: phone },
-            // Check for username only if it's provided
-            ...(username ? [{ username: username }] : []),
-          ],
+          OR: [{ email: email }, { phone: phone }],
         },
       });
 
       if (existingUser) {
-        let conflictField = "";
-        if (existingUser.username === username) conflictField = "username";
-        else if (existingUser.email === email) conflictField = "email";
-        else if (existingUser.phone === phone) conflictField = "phone";
-
-        throw new Error(`User with this ${conflictField} already exists.`);
+        throw new Error("User with this email or phone already exists");
       }
 
-      // Find the current highest userId and increment from there (if auto-increment is not available)
-      const lastUser = await prisma.user.findFirst({
-        orderBy: { userId: "desc" }, // Get the last user by userId
-      });
+      const hashedPassword = await bcrypt.hash(password, 10);
 
-      const nextUserId = lastUser ? lastUser.userId + 1 : 1001;
-
-      // Hash the password before storing
-      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-
-      // Create new user
       const newUser = await prisma.user.create({
         data: {
-          userId: nextUserId, // Assign custom userId
-          username: username, // Optional field
-          email: email,
-          phone: phone,
-          password: hashedPassword, // Store the hashed password
-          fullName: fullName, // Optional field
+          fullName,
+          email,
+          phone,
+          password: hashedPassword,
           department: department,
           role: role,
           profileImage: profileImage,
-          dob: dob ? new Date(dob) : null,
+          dob: dob,
+          status: "ACTIVE",
         },
       });
 
@@ -121,114 +55,6 @@ const userService = {
     }
   },
 
-  async createUsersBulk(usersData) {
-    const createdUsers = [];
-    const failedUsers = [];
-
-    for (const userData of usersData) {
-      let { username, email, phone, password, fullName } = userData;
-
-      // Ensure all inputs are strings to avoid `.trim()` issues
-      phone = phone ? String(phone) : null;
-      password = password ? String(password) : null;
-      email = email ? String(email) : null;
-      username = username ? String(username) : null;
-      fullName = fullName ? String(fullName) : null;
-
-      // Trim input data
-      username = username?.trim() || null;
-      email = email?.trim() || null;
-      phone = phone?.trim() || null;
-      password = password?.trim() || null;
-      fullName = fullName?.trim() || null;
-
-      // Validate mandatory fields
-      if (!email && !phone) {
-        failedUsers.push({
-          userData,
-          reason: "Either email or phone is required.",
-        });
-        continue;
-      }
-
-      if (!password) {
-        failedUsers.push({ userData, reason: "Password is required." });
-        continue;
-      }
-
-      // Additional validation for email and phone format
-      if (email && !validator.isEmail(email)) {
-        failedUsers.push({ userData, reason: "Invalid email format." });
-        continue;
-      }
-
-      if (phone && !validator.isMobilePhone(phone, "any")) {
-        failedUsers.push({ userData, reason: "Invalid phone number format." });
-        continue;
-      }
-
-      try {
-        // Check for existing user with email or phone
-        const existingUser = await prisma.user.findFirst({
-          where: {
-            OR: [
-              { email: email },
-              { phone: phone },
-              ...(username ? [{ username: username }] : []),
-            ],
-          },
-        });
-
-        if (existingUser) {
-          let conflictField = "";
-          if (existingUser.username === username) conflictField = "username";
-          else if (existingUser.email === email) conflictField = "email";
-          else if (existingUser.phone === phone) conflictField = "phone";
-
-          failedUsers.push({
-            userData,
-            reason: `User with this ${conflictField} already exists.`,
-          });
-          continue;
-        }
-
-        // Hash the password
-        const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-
-        // Find the current highest userId and increment from there
-        const lastUser = await prisma.user.findFirst({
-          orderBy: { userId: "desc" },
-        });
-        const nextUserId = lastUser ? lastUser.userId + 1 : 1001;
-
-        // Create the new user
-        const newUser = await prisma.user.create({
-          data: {
-            userId: nextUserId,
-            username: username,
-            email: email,
-            phone: phone,
-            password: hashedPassword,
-            fullName: fullName,
-          },
-        });
-
-        createdUsers.push(newUser);
-      } catch (error) {
-        failedUsers.push({
-          userData,
-          reason: `Error creating user: ${error.message}`,
-        });
-      }
-    }
-
-    return {
-      message: `${createdUsers.length} users created successfully, ${failedUsers.length} users failed.`,
-      createdUsers,
-      failedUsers,
-    };
-  },
-  // 2. Login a user using either email or phone, and create a session
   async loginUser(data, req) {
     let { emailOrPhone, password } = data;
 
