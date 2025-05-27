@@ -1,19 +1,11 @@
 import bcrypt from "bcrypt";
 import validateMandatoryFields from "../../utils/validateFields.js";
 import jwt from "jsonwebtoken";
+import prisma from "../../config/prismaClient.js";
 
 const userService = {
   async createUser(data) {
-    let {
-      fullName,
-      email,
-      phone,
-      password,
-      department,
-      role,
-      profileImage,
-      dob,
-    } = data;
+    let { fullName, email, phone, password, roleId, profileImage, dob } = data;
 
     try {
       const existingUser = await prisma.user.findFirst({
@@ -34,18 +26,13 @@ const userService = {
           email,
           phone,
           password: hashedPassword,
-          department: department,
-          role: role,
-          profileImage: profileImage,
+          role: {
+            connect: {
+              id: roleId,
+            },
+          },
+          profileImage,
           dob: dob,
-          status: "ACTIVE",
-        },
-      });
-
-      await prisma.userRole.create({
-        data: {
-          userId: newUser.id,
-          roleId: role,
         },
       });
 
@@ -58,57 +45,13 @@ const userService = {
   async loginUser(data, req) {
     let { emailOrPhone, password } = data;
 
-    // Validate mandatory fields
-    validateMandatoryFields([
-      { key: "Email or Phone", value: emailOrPhone },
-      { key: "Password", value: password },
-    ]);
-
-    // Trim input fields to ensure no leading/trailing spaces
-    emailOrPhone = emailOrPhone.trim();
-    password = password.trim();
-
-    // Validate if the input is either a valid email or a phone number
-    const isEmail = validator.isEmail(emailOrPhone);
-    const isPhone = validator.isMobilePhone(emailOrPhone, "any");
-
-    if (!isEmail && !isPhone) {
-      throw new Error("Invalid login credentials");
-    }
-
     try {
-      // Find the user by email or phone based on the input type
       const user = await prisma.user.findFirst({
         where: {
-          OR: [
-            isEmail ? { email: emailOrPhone } : {},
-            isPhone ? { phone: emailOrPhone } : {},
-          ],
+          OR: [{ email: emailOrPhone }, { phone: emailOrPhone }],
         },
         include: {
-          roles: {
-            include: {
-              role: {
-                include: {
-                  permissions: {
-                    include: {
-                      permission: true,
-                    },
-                  },
-                  department: {
-                    select: {
-                      name: true,
-                    },
-                  },
-                }, // Include role permissions
-              },
-            },
-          },
-          permissions: {
-            include: {
-              permission: true,
-            },
-          },
+          role: true,
         },
       });
 
@@ -119,7 +62,7 @@ const userService = {
         );
       }
 
-      if (user.status !== "ACTIVE") {
+      if (user.isActive !== true) {
         throw new Error(
           "Your account is currently frozen. Please contact your administrator for assistance."
         );
@@ -127,40 +70,21 @@ const userService = {
       // Compare hashed password
       const isPasswordValid = await bcrypt.compare(password, user.password);
 
-      // If password doesn't match
       if (!isPasswordValid) {
-        throw new Error("Invalid login credentials"); // Same generic error
+        throw new Error("Invalid login credentials");
       }
 
-      // Delete previous sessions for the user (optional)
-      // await prisma.session.deleteMany({
-      //     where: {
-      //         data: {
-      //             path: ['user', 'id'],
-      //             equals: user.id,
-      //         },
-      //     },
-      // });
-
-      // Prepare permissions from roles and user-specific permissions
-      const rolePermissions = user.roles.flatMap(
-        (role) => role.role.permissions
-      );
-      const userPermissions = [...rolePermissions, ...user.permissions];
-      console.log("user.permissions = ", user.permissions);
-      // Create a session (sanitizing data before storing it)
       req.session.user = {
         id: user.id,
-        username: user.username,
+        fullName: user.fullName,
         email: user.email,
         phone: user.phone,
-        fullName: user.fullName,
-        roles: user.roles,
-        permissions: user.permissions, // Store permission names
+        role: user.role.name,
       };
 
       return user;
     } catch (error) {
+      console.log(error);
       throw new Error(`${error.message}`);
     }
   },

@@ -5,7 +5,7 @@ import roleRoutes from "./rbac/roleRoutes.js";
 
 const router = express.Router();
 
-router.use("/users", userRoutes);
+router.use("/user", userRoutes);
 
 router.use("/departments", departmentRoutes);
 

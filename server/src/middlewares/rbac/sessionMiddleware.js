@@ -1,9 +1,6 @@
 import session from "express-session";
 import pgSession from "connect-pg-simple";
 import { Pool } from "pg";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 const pgPool = new Pool({
   connectionString: process.env.DATABASE_URL,

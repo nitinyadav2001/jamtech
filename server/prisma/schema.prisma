@@ -39,7 +39,18 @@ model User {
   resetPasswordToken       String?
   resetPasswordTokenExpiry DateTime?
   roleId                   String
+  profileImage             String?
+  dob                      DateTime?
+  isActive                 Boolean   @default(true)
   createdAt                DateTime  @default(now())
   updatedAt                DateTime  @updatedAt
   role                     Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  sid    String   @id @db.VarChar(255) // session id as primary key
+  sess   Json // JSON data of session
+  expire DateTime @db.Timestamp(6) // expiry timestamp
+
+  @@map("Session") // maps to table name "Session"
 }

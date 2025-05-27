@@ -1,17 +1,16 @@
 import userService from "../../services/rbac/userService.js";
-import { uploadFilesToS3 } from "../../middlewares/rbac/aws.file.stream.js";
+import { generateFileUrl } from "../../utils/filedHelper.js";
 
 const userController = {
   async createUser(req, res, next) {
     try {
       let userData = req.body;
 
-      // Upload files and get metadata
-      const uploadedFiles = (await uploadFilesToS3(req.files)) || [];
+      let profilePictureUrl = null;
+      if (req.file) {
+        profilePictureUrl = generateFileUrl(req, req.file.path);
+      }
 
-      // Match uploaded profile picture URL
-      const profilePictureUrl = uploadedFiles ? uploadedFiles[0]?.url : null;
-      // Add to user data
       userData = {
         ...userData,
         profileImage: profilePictureUrl || null,
@@ -81,8 +80,6 @@ const userController = {
 
   async loginUser(req, res) {
     const { emailOrPhone, password } = req.body;
-
-    // Validate required fields
     if (!emailOrPhone) {
       return res.status(400).json({ error: "Email or phone is required" });
     }
