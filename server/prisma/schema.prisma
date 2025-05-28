@@ -45,12 +45,42 @@ model User {
   createdAt                DateTime  @default(now())
   updatedAt                DateTime  @updatedAt
   role                     Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  Folder                   Folder[]
+  File                     File[]
 }
 
 model Session {
-  sid    String   @id @db.VarChar(255) // session id as primary key
-  sess   Json // JSON data of session
-  expire DateTime @db.Timestamp(6) // expiry timestamp
+  sid    String   @id @db.VarChar(255)
+  sess   Json
+  expire DateTime @db.Timestamp(6)
 
-  @@map("Session") // maps to table name "Session"
+  @@map("Session")
+}
+
+model Folder {
+  id          String   @id @default(uuid())
+  name        String
+  parentId    String?
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parent    Folder?  @relation("FolderToFolder", fields: [parentId], references: [id])
+  children  Folder[] @relation("FolderToFolder")
+  files     File[]
+  createdBy User     @relation(fields: [createdById], references: [id])
+}
+
+model File {
+  id           String   @id @default(uuid())
+  name         String
+  path         String
+  fileType     String
+  folderId     String
+  uploadedById String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  folder     Folder @relation(fields: [folderId], references: [id])
+  uploadedBy User   @relation(fields: [uploadedById], references: [id])
 }

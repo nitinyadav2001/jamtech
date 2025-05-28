@@ -1,22 +1,18 @@
-// src/middlewares/uploadMiddleware.js
 import multer from "multer";
 import path from "path";
 
-// Define storage for the uploaded files
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "uploads/"); // Folder to save uploaded files
+    cb(null, "uploads/");
   },
   filename: function (req, file, cb) {
-    // e.g. userId + timestamp + extension
     const uniqueSuffix = Date.now() + path.extname(file.originalname);
     cb(null, file.fieldname + "-" + uniqueSuffix);
   },
 });
 
-// Filter files by type (only images)
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|gif/;
+  const allowedTypes = /jpeg|jpg|png|webp|gif/;
   const extname = allowedTypes.test(
     path.extname(file.originalname).toLowerCase()
   );
@@ -31,7 +27,7 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter,
 });
 

@@ -124,21 +124,8 @@ const userController = {
   },
 
   async getAllUsers(req, res) {
-    const { page, pageSize, sortBy, order, search, filters, departmentId } =
-      req.query;
-    const userId = req.session?.user?.id;
-    // console.log("session user=", userId);
     try {
-      const users = await userService.getAllUsers({
-        page,
-        pageSize,
-        sortBy,
-        order,
-        search,
-        filters,
-        userId,
-        departmentId,
-      });
+      const users = await userService.getAllUsers();
       return res.status(200).json(users);
     } catch (error) {
       console.log(error);
